@@ -1,40 +1,30 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"time"
-	//"os/exec"
-	//"reflect"
-	"sync"
-	"sync/atomic"
+	"wbwgo/network"
 )
 
-var globl_num int32 = 0
-
-var map_nums map[int32]int32
-
-var total_guard sync.RWMutex
+var s_manager *network.SessionManager
 
 func DoSome() {
 	for i := 0; i < 10000; i++ {
 		go func() {
-			total_guard.Lock()
-			defer total_guard.Unlock()
-			num := atomic.AddInt32(&globl_num, 1)
-			if _, ok := map_nums[num]; ok {
-				fmt.Printf("-----------------------------num:%d\n", num)
-			} else {
-				map_nums[num] = num
-				fmt.Printf("num:%d\n", num)
-			}
+			s := network.NewSession(nil)
+			s_manager.AddSession(s)
 		}()
 	}
 }
 
 func main() {
-	map_nums = make(map[int32]int32)
+	s_manager = network.NewSessionManager()
 
 	DoSome()
 
 	time.Sleep(10 * time.Second)
+
+	log.Printf("total num %d\n", s_manager.GetSessionCount())
+
+	time.Sleep(time.Second)
 }
