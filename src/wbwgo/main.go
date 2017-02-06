@@ -27,4 +27,5 @@ func main() {
 	log.Printf("total num %d\n", s_manager.GetSessionCount())
 
 	time.Sleep(time.Second)
+
 }

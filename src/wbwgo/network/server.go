@@ -40,8 +40,13 @@ func (s *Server) Init(conn_type string, addr string) {
 				continue
 			}
 
-			conn.LocalAddr().String()
+			se := NewSession(conn)
+
+			s.SessionManager.AddSession(se)
+
+			//todo session关闭
+
+			log.Printf("accept new conn id:%d", se.id)
 		}
 	}()
-
 }
