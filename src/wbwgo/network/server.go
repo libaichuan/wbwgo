@@ -6,17 +6,23 @@ import (
 )
 
 type Server struct {
-	*SessionManager
+	ses_manager *SessionManager
+
+	event_loop *EventLoop
+
+	dispatcher *MsgDispatcher
 
 	listener net.Listener
 
 	running bool
 }
 
-func NewServer() *Server {
+func NewServer(event_loop *EventLoop) *Server {
 	return &Server{
-		SessionManager: NewSessionManager(),
-		running:        false,
+		ses_manager: NewSessionManager(),
+		event_loop:  event_loop,
+		dispatcher:  NewMsgDispatcher(),
+		running:     false,
 	}
 }
 
@@ -42,7 +48,7 @@ func (s *Server) Init(conn_type string, addr string) {
 
 			se := NewSession(conn)
 
-			s.SessionManager.AddSession(se)
+			s.ses_manager.AddSession(se)
 
 			//todo session关闭
 

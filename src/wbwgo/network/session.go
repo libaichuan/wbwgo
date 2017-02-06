@@ -43,19 +43,19 @@ func (self *Session) RecvLoop() {
 			break
 		}
 
-		if _, err = io.ReadFull(self.head_reader, self.head_buf); err != nil {
+		if _, err := io.ReadFull(self.head_reader, self.head_buf); err != nil {
 			log.Fatalln("%s", err)
 			return
 		}
 
 		new_pack := &Packet{}
 
-		if _, err = binary.Read(self.head_buf, binary.LittleEndian, new_pack.msg_id); err != nil {
+		if err := binary.Read(self.head_buf, binary.LittleEndian, &new_pack.msg_id); err != nil {
 			log.Fatalln("%s", err)
 			return
 		}
 
-		if _, err = binary.Read(self.head_buf, binary.LittleEndian, new_pack.msg_len); err != nil {
+		if err := binary.Read(self.head_buf, binary.LittleEndian, &new_pack.msg_len); err != nil {
 			log.Fatalln("%s", err)
 			return
 		}
@@ -67,7 +67,7 @@ func (self *Session) RecvLoop() {
 
 		new_pack.data = make([]byte, new_pack.msg_len)
 
-		if _, err = io.ReadFull(self.conn, new_pack.data); err != nil {
+		if _, err := io.ReadFull(self.conn, new_pack.data); err != nil {
 			log.Fatalln("%s", err)
 			return
 		}

@@ -13,7 +13,7 @@ eventloop负责 IO多线程收到的data通过eventloop传给单线程的业务
 */
 
 type LoopData struct {
-	dispatcher MsgDispatcher
+	dispatcher *MsgDispatcher
 
 	data interface{}
 }
@@ -23,21 +23,21 @@ type EventLoop struct {
 }
 
 func (self *EventLoop) Loop() {
-	for q := range self.queue {
-
-		if q.dispatcher != nil {
-			d := q.data()
-			if f, ok := d.(func()); ok {
-				f()
+	go func() {
+		for q := range self.queue {
+			if q.dispatcher != nil {
+				if f, ok := q.data.(func()); ok {
+					f()
+				}
+			} else {
+				q.dispatcher.OnMessage(q.data)
 			}
-		} else {
-			q.dispatcher.OnMessage(q.data)
 		}
+	}()
 
-	}
 }
 
-func (self *EventLoop) AddInLoop(dp MsgDispatcher, data interface{}) {
+func (self *EventLoop) AddInLoop(dp *MsgDispatcher, data interface{}) {
 	self.queue <- LoopData{dispatcher: dp, data: data}
 }
 
