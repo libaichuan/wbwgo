@@ -13,6 +13,10 @@ type Session struct {
 
 	conn net.Conn
 
+	event_loop *EventLoop
+
+	dispatcher *MsgDispatcher
+
 	head_reader *bufio.Reader
 
 	head_buf []byte
@@ -50,15 +54,8 @@ func (self *Session) RecvLoop() {
 
 		new_pack := &Packet{}
 
-		if err := binary.Read(self.head_buf, binary.LittleEndian, &new_pack.msg_id); err != nil {
-			log.Fatalln("%s", err)
-			return
-		}
-
-		if err := binary.Read(self.head_buf, binary.LittleEndian, &new_pack.msg_len); err != nil {
-			log.Fatalln("%s", err)
-			return
-		}
+		new_pack.msg_id = binary.LittleEndian.Uint16(self.head_buf)
+		new_pack.msg_len = binary.LittleEndian.Uint16(self.head_buf[2:])
 
 		if new_pack.msg_len > MaxPacketSize {
 			log.Fatalln("more than maxpackage")
@@ -77,6 +74,7 @@ func (self *Session) RecvLoop() {
 		但是这里要转一次基类，到时候又不能确定当然proto的回调。要是通过ID再在相应的业务里面转一次，转的次数太多，而且没泛型。
 		所以这里就不反序列化了，在回调里面自己转
 		*/
+		self.event_loop.AddInLoop(self.dispatcher, new_pack)
 	}
 }
 
@@ -84,12 +82,14 @@ func (self *Session) SendLoop() {
 
 }
 
-func NewSession(conn net.Conn) *Session {
+func NewSession(conn net.Conn, dispatcher *MsgDispatcher, event_loop *EventLoop) *Session {
 	se := &Session{
 		conn:        conn,
 		head_reader: bufio.NewReader(conn),
 		head_buf:    make([]byte, PackageHeaderSize),
 		is_close:    false,
+		event_loop:  event_loop,
+		dispatcher:  dispatcher,
 	}
 
 	go se.RecvLoop()

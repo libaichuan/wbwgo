@@ -17,6 +17,10 @@ type Server struct {
 	running bool
 }
 
+func (s *Server) GetDispatcher() *MsgDispatcher {
+	return s.dispatcher
+}
+
 func NewServer(event_loop *EventLoop) *Server {
 	return &Server{
 		ses_manager: NewSessionManager(),
@@ -36,6 +40,7 @@ func (s *Server) Init(conn_type string, addr string) {
 
 	s.listener = ln
 	s.running = true
+	log.Printf("listen %s success", addr)
 
 	go func() {
 		for s.running {
@@ -46,7 +51,7 @@ func (s *Server) Init(conn_type string, addr string) {
 				continue
 			}
 
-			se := NewSession(conn)
+			se := NewSession(conn, s.dispatcher, s.event_loop)
 
 			s.ses_manager.AddSession(se)
 
