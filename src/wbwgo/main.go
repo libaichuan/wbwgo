@@ -4,61 +4,26 @@ import (
 	"log"
 	"wbwgo/msg"
 	"wbwgo/network"
-
-	"reflect"
-
-	"github.com/golang/protobuf/proto"
 )
 
-var dis *network.MsgDispatcher
-
-func RegisterMessage(id uint16, m_msg proto.Message) {
-	dis.RegisterRefType(id, reflect.TypeOf(m_msg))
-}
-
-func gogo(t interface{}) {
-	test := t.(proto.Message)
-	data, err := proto.Marshal(test)
-	if err != nil {
-		log.Fatal("marshaling error: ", err)
-	}
-
-	var ref_type reflect.Type = dis.GetRefType(1)
-
-	if ref_type == nil {
-		log.Println("ref_type is nil")
-		return
-	}
-
-	// 进行解码
-	m_msg := reflect.New(ref_type.Elem()).Interface()
-	proto.Unmarshal(data, m_msg.(proto.Message))
-
-	newTest := m_msg.(*msg.Hello)
-
-	if err != nil {
-		log.Fatal("unmarshaling error: ", err)
-	}
-
-	log.Printf("id:%d;str:%s;", newTest.Id, newTest.Name)
-}
+var ch chan int
 
 func main() {
-	dis = network.NewMsgDispatcher()
-	RegisterMessage(1, &msg.Hello{})
-	//	loop := network.NewEventLoop()
+	ch = make(chan int)
 
-	//	server := network.NewServer(loop)
+	loop := network.NewEventLoop()
 
-	//	server.Init("tcp", "127.0.0.1:80")
+	server := network.NewServer(loop)
 
-	//	server.GetDispatcher()
+	server.Init("tcp", "127.0.0.1:8000")
 
-	//	loop.Loop()
-	test := &msg.Hello{
-		Name: "li",
-		Id:   6,
-	}
+	network.RegisterMessage(server.GetDispatcher(), 1, &msg.Hello{}, func(ses *network.Session, f interface{}) {
+		cur_msg := f.(*msg.Hello)
+		log.Println("recv new msg id:%d,name:%s\n", cur_msg.Id, cur_msg.Name)
+		ch <- 1
+	})
 
-	gogo(test)
+	loop.Loop()
+
+	<-ch
 }

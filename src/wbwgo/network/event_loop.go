@@ -1,5 +1,9 @@
 package network
 
+import (
+	"log"
+)
+
 //事件循环
 
 /*
@@ -25,7 +29,7 @@ type EventLoop struct {
 func (self *EventLoop) Loop() {
 	go func() {
 		for q := range self.queue {
-			if q.dispatcher != nil {
+			if q.dispatcher == nil {
 				if f, ok := q.data.(func()); ok {
 					f()
 				}
@@ -39,6 +43,7 @@ func (self *EventLoop) Loop() {
 
 func (self *EventLoop) AddInLoop(dp *MsgDispatcher, data interface{}) {
 	self.queue <- LoopData{dispatcher: dp, data: data}
+	log.Println("add Inloop-------------")
 }
 
 func NewEventLoop() *EventLoop {

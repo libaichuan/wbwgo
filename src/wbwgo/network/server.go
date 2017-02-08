@@ -61,3 +61,5 @@ func (s *Server) Init(conn_type string, addr string) {
 		}
 	}()
 }
+
+//todo server close

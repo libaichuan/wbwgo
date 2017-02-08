@@ -14,7 +14,7 @@ import (
 type MsgDispatcher struct {
 	msgs map[uint16]func(interface{})
 
-	ref_types map[uint16]reflect.Type
+	ref_types map[reflect.Type]uint16
 }
 
 func (self *MsgDispatcher) RegisterMsg(id uint16, f func(interface{})) {
@@ -26,24 +26,25 @@ func (self *MsgDispatcher) RegisterMsg(id uint16, f func(interface{})) {
 	self.msgs[id] = f
 }
 
-func (self *MsgDispatcher) RegisterRefType(id uint16, t reflect.Type) {
-	if _, ok := self.ref_types[id]; ok {
-		log.Fatalln("MsgDispatcher::RegisterRefType same id")
+func (self *MsgDispatcher) RegisterRefType(t reflect.Type, id uint16) {
+	if _, ok := self.ref_types[t]; ok {
+		log.Fatalln("MsgDispatcher::RegisterRefType same reflect.Type")
 		return
 	}
 
-	self.ref_types[id] = t
+	self.ref_types[t] = id
 }
 
-func (self *MsgDispatcher) GetRefType(id uint16) reflect.Type {
-	if v, ok := self.ref_types[id]; ok {
+func (self *MsgDispatcher) GetRefID(t reflect.Type) uint16 {
+	if v, ok := self.ref_types[t]; ok {
 		return v
 	}
 
-	return nil
+	return 0
 }
 
 func (self *MsgDispatcher) OnMessage(data interface{}) {
+	log.Println("OnMessage ...................")
 	if v, ok := data.(*EventData); ok {
 		if f, ok := self.msgs[v.p.msg_id]; ok {
 			f(data)
@@ -59,7 +60,7 @@ func (self *MsgDispatcher) OnMessage(data interface{}) {
 func NewMsgDispatcher() *MsgDispatcher {
 	self := &MsgDispatcher{
 		msgs:      make(map[uint16]func(interface{})),
-		ref_types: make(map[uint16]reflect.Type),
+		ref_types: make(map[reflect.Type]uint16),
 	}
 
 	return self
@@ -68,7 +69,7 @@ func NewMsgDispatcher() *MsgDispatcher {
 func RegisterMessage(dispatcher *MsgDispatcher, id uint16, m_msg proto.Message, callback func(ses *Session, f interface{})) {
 	ref_type := reflect.TypeOf(m_msg)
 
-	//dispatcher.RegisterRefType(id, ref_type)
+	dispatcher.RegisterRefType(ref_type, id)
 
 	dispatcher.RegisterMsg(id, func(data interface{}) {
 
