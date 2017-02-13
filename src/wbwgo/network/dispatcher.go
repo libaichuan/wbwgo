@@ -1,7 +1,7 @@
 package network
 
 import (
-	"log"
+	//"log"
 	"reflect"
 
 	"github.com/golang/protobuf/proto"
@@ -19,7 +19,7 @@ type MsgDispatcher struct {
 
 func (self *MsgDispatcher) RegisterMsg(id uint16, f func(interface{})) {
 	if _, ok := self.msgs[id]; ok {
-		log.Fatalln("MsgDispatcher::RegisterMsg same id")
+		//log.Fatalln("MsgDispatcher::RegisterMsg same id")
 		return
 	}
 
@@ -28,7 +28,7 @@ func (self *MsgDispatcher) RegisterMsg(id uint16, f func(interface{})) {
 
 func (self *MsgDispatcher) RegisterRefType(t reflect.Type, id uint16) {
 	if _, ok := self.ref_types[t]; ok {
-		log.Fatalln("MsgDispatcher::RegisterRefType same reflect.Type")
+		//log.Fatalln("MsgDispatcher::RegisterRefType same reflect.Type")
 		return
 	}
 
@@ -44,15 +44,15 @@ func (self *MsgDispatcher) GetRefID(t reflect.Type) uint16 {
 }
 
 func (self *MsgDispatcher) OnMessage(data interface{}) {
-	log.Println("OnMessage ...................")
+	//log.Println("OnMessage ...................")
 	if v, ok := data.(*EventData); ok {
 		if f, ok := self.msgs[v.p.msg_id]; ok {
 			f(data)
 		} else {
-			log.Println("MsgDispatcher::OnMessage not register message")
+			//log.Println("MsgDispatcher::OnMessage not register message")
 		}
 	} else {
-		log.Println("MsgDispatcher::OnMessage not EventData")
+		//log.Println("MsgDispatcher::OnMessage not EventData")
 	}
 
 }
@@ -79,7 +79,7 @@ func RegisterMessage(dispatcher *MsgDispatcher, id uint16, m_msg proto.Message, 
 
 			callback(ev.ses, m_msg)
 		} else {
-			log.Printf("dispatcher callback to *EventData,data type is %s", reflect.TypeOf(data).String())
+			//log.Printf("dispatcher callback to *EventData,data type is %s", reflect.TypeOf(data).String())
 		}
 
 	})

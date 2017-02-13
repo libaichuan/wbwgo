@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"encoding/binary"
 	"io"
-	"log"
+	//"log"
 	"net"
+	"sync"
 
 	"reflect"
 
@@ -28,6 +29,10 @@ type Session struct {
 	is_close bool
 
 	packet_list *PacketList
+
+	wait_group sync.WaitGroup
+
+	OnClose func()
 }
 
 const (
@@ -35,16 +40,20 @@ const (
 	MaxPacketSize     = 2048
 )
 
+func (self *Session) WeakUpRecvLoop() {
+	self.packet_list.AddPacket(&Packet{})
+}
+
 func (self *Session) Close() {
 	if self.is_close {
-		log.Fatalln("close double")
 		return
 	}
-	log.Println("3333333333333333")
 
 	self.is_close = true
 
 	self.conn.Close()
+
+	//log.Println("session close\n")
 }
 
 func (self *Session) Send(data interface{}) {
@@ -52,7 +61,7 @@ func (self *Session) Send(data interface{}) {
 
 	data_arr, err := proto.Marshal(msg)
 	if err != nil {
-		log.Println("Send Error Msg %s", reflect.TypeOf(msg).String())
+		//log.Println("Send Error Msg %s", reflect.TypeOf(msg).String())
 		return
 	}
 
@@ -70,7 +79,7 @@ func (self *Session) Send(data interface{}) {
 	self.packet_list.AddPacket(p)
 }
 
-func (self *Session) Write(p *Packet) {
+func (self *Session) Write(p *Packet) bool {
 	msg_len := uint16(len(p.data))
 
 	msg_buf := make([]byte, msg_len+4)
@@ -81,21 +90,25 @@ func (self *Session) Write(p *Packet) {
 	copy(msg_buf[4:], p.data)
 
 	if _, err := self.conn.Write(msg_buf); err != nil {
-		log.Println(err)
+		return false
 	}
+	return true
 }
 
 func (self *Session) RecvLoop() {
+	defer func() {
+		//log.Println("RecvLoop Over")
+	}()
 
 	for {
 		if self.is_close {
 			break
 		}
 
-		if _, err := io.ReadFull(self.conn, self.head_buf); err != nil {
-			log.Println("111111111111")
-			log.Println("%s", err)
-			return
+		if _, err := io.ReadFull(self.head_reader, self.head_buf); err != nil {
+			self.Close()
+			//log.Println("%s", err)
+			break
 		}
 
 		new_pack := &Packet{}
@@ -103,27 +116,38 @@ func (self *Session) RecvLoop() {
 		new_pack.msg_id = binary.LittleEndian.Uint16(self.head_buf)
 		new_pack.msg_len = binary.LittleEndian.Uint16(self.head_buf[2:])
 
-		log.Printf("msg_id:%d,msg_len:%d", new_pack.msg_id, new_pack.msg_len)
+		//log.Printf("msg_id:%d,msg_len:%d", new_pack.msg_id, new_pack.msg_len)
 
 		if new_pack.msg_len > MaxPacketSize {
-			log.Println("more than maxpackage")
-			return
+			//log.Println("more than maxpackage")
+			break
 		}
 
 		new_pack.data = make([]byte, new_pack.msg_len)
 
-		if _, err := io.ReadFull(self.conn, new_pack.data); err != nil {
-			log.Println("2222222222")
-			log.Println("%s", err)
-			return
+		if _, err := io.ReadFull(self.head_reader, new_pack.data); err != nil {
+			//log.Println("%s", err)
+			self.Close()
+			break
 		}
-		log.Println("收到data:", new_pack.data)
+		//log.Println("收到data:", new_pack.data)
 
 		self.event_loop.AddInLoop(self.dispatcher, NewEventData(self, new_pack))
+
 	}
+
+	self.WeakUpRecvLoop()
+
+	self.wait_group.Done()
 }
 
 func (self *Session) SendLoop() {
+
+	//todo 发送线程被条件变量阻塞，需要触发一个消息让其在触发close关闭该协程
+
+	defer func() {
+		//log.Println("SendLoop Over")
+	}()
 	var write_list []*Packet
 
 	for {
@@ -131,18 +155,34 @@ func (self *Session) SendLoop() {
 			break
 		}
 
+		will_exit := false
+
 		write_list = write_list[0:0]
 
 		temp_list := self.packet_list.BeginList()
 		for _, v := range temp_list {
-			write_list = append(write_list, v)
+			if v.msg_id == 0 {
+				will_exit = true
+			} else {
+				write_list = append(write_list, v)
+			}
 		}
 		self.packet_list.EndList()
 
 		for _, v := range write_list {
-			self.Write(v)
+			if self.Write(v) {
+				break
+			}
+		}
+
+		if will_exit {
+			break
 		}
 	}
+
+	self.Close()
+
+	self.wait_group.Done()
 }
 
 func NewSession(conn net.Conn, dispatcher *MsgDispatcher, event_loop *EventLoop) *Session {
@@ -155,6 +195,13 @@ func NewSession(conn net.Conn, dispatcher *MsgDispatcher, event_loop *EventLoop)
 		dispatcher:  dispatcher,
 		packet_list: NewPacketList(),
 	}
+
+	se.wait_group.Add(2)
+
+	go func() {
+		se.wait_group.Wait()
+		se.OnClose()
+	}()
 
 	go se.RecvLoop()
 

@@ -1,7 +1,7 @@
 package network
 
 import (
-	"log"
+	//"log"
 	"net"
 )
 
@@ -34,30 +34,32 @@ func (s *Server) Init(conn_type string, addr string) {
 	ln, err := net.Listen(conn_type, addr)
 
 	if err != nil {
-		log.Fatalf("listen error %s", err.Error())
+		//log.Fatalf("listen error %s", err.Error())
 		return
 	}
 
 	s.listener = ln
 	s.running = true
-	log.Printf("listen %s success", addr)
+	//log.Printf("listen %s success", addr)
 
 	go func() {
 		for s.running {
 			conn, err := ln.Accept()
 
 			if err != nil {
-				log.Fatalf("accpet error %s", err.Error())
+				//log.Fatalf("accpet error %s", err.Error())
 				continue
 			}
 
 			se := NewSession(conn, s.dispatcher, s.event_loop)
 
+			se.OnClose = func() {
+				s.ses_manager.RemoveSessionById(se.id)
+			}
+
 			s.ses_manager.AddSession(se)
 
-			//todo session关闭
-
-			log.Printf("accept new conn id:%d", se.id)
+			//log.Printf("accept new conn id:%d", se.id)
 		}
 	}()
 }

@@ -1,7 +1,7 @@
 package network
 
 import (
-	"log"
+	//"log"
 	"sync"
 	"sync/atomic"
 )
@@ -38,14 +38,14 @@ func (self *SessionManager) AddSession(s *Session) {
 	}
 
 	if cur_atomic_count == 0 {
-		log.Println("SessionManager::AddSession same key")
+		//log.Println("SessionManager::AddSession same key")
 	}
 
 	s.id = id
 
 	self.sessions[id] = s
 
-	log.Printf("add new session id:%d\n", id)
+	//log.Printf("add new session id:%d\n", id)
 }
 
 func (self *SessionManager) GetSessionById(id int32) *Session {
@@ -64,6 +64,7 @@ func (self *SessionManager) RemoveSessionById(id int32) {
 	defer self.ses_guard.Unlock()
 
 	delete(self.sessions, id)
+	//log.Printf("SessionManager::RemoveSessionById %d", id)
 }
 
 func (self *SessionManager) GetSessionCount() int {
