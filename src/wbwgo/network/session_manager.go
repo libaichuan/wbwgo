@@ -74,6 +74,15 @@ func (self *SessionManager) GetSessionCount() int {
 	return len(self.sessions)
 }
 
+func (self *SessionManager) CloseAllSession() {
+	self.ses_guard.Lock()
+	defer self.ses_guard.Unlock()
+
+	for _, v := range self.sessions {
+		v.Close()
+	}
+}
+
 func NewSessionManager() *SessionManager {
 	return &SessionManager{
 		sessions: make(map[int32]*Session),

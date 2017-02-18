@@ -1,6 +1,7 @@
-package main
+package benchmark
 
 import (
+	"testing"
 	"time"
 	"wbwgo/benchmark"
 	//"wbwgo/common"
@@ -61,17 +62,10 @@ func NewClient() {
 	loop.Loop()
 }
 
-func main() {
+func GoGo_IO() {
 	client_num := 100
 
 	ch = make(chan int)
-
-	f, err := os.Create("cpu-profile.prof")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	pprof.StartCPUProfile(f)
 
 	//common.ConsoleStart()
 
@@ -82,6 +76,10 @@ func main() {
 	}
 
 	<-ch
+}
 
-	pprof.StopCPUProfile()
+func BenchmarkIO(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GoGo_IO()
+	}
 }

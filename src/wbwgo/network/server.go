@@ -1,7 +1,7 @@
 package network
 
 import (
-	//"log"
+	"log"
 	"net"
 )
 
@@ -65,3 +65,17 @@ func (s *Server) Init(conn_type string, addr string) {
 }
 
 //todo server close
+
+func (self *Server) OnClose() {
+	if self.running == false {
+		return
+	}
+
+	self.listener.Close()
+
+	self.running = false
+
+	self.ses_manager.CloseAllSession()
+
+	log.Println("Server::OnClose")
+}

@@ -45,13 +45,14 @@ func (self *QpsMeter) PrintInfo() int {
 	return self.total_qps / self.cur_index
 }
 
-func NewQpsMeter(even_loop *network.EventLoop) *QpsMeter {
+func NewQpsMeter(even_loop *network.EventLoop) (*QpsMeter, *misc.Timer) {
 	p := &QpsMeter{}
 
-	misc.NewTimer(even_loop, time.Second, func() {
+	timer := misc.NewTimer(even_loop, time.Second, func() {
+		log.Printf("cur_qps:%d,index:%d", p.cur_qps, p.cur_index)
 		p.OverIndex()
-		log.Printf("acc.................%d,index:%d", p.PrintInfo(), p.cur_index)
+		//log.Printf("acc:%d,index:%d", p.PrintInfo(), p.cur_index)
 	})
 
-	return p
+	return p, timer
 }

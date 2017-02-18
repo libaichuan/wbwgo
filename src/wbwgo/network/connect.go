@@ -44,7 +44,10 @@ func (self *Connect) DoConnet(addr string) {
 			msg_id: 2,
 		}))
 
-		<-self.closeSignal
+		if <-self.closeSignal {
+			self.conn = nil
+			break
+		}
 	}
 }
 

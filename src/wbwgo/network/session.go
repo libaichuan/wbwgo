@@ -33,6 +33,8 @@ type Session struct {
 	wait_group sync.WaitGroup
 
 	OnClose func()
+
+	needPostSend bool
 }
 
 const (
@@ -136,18 +138,18 @@ func (self *Session) RecvLoop() {
 
 	}
 
-	self.WeakUpRecvLoop()
+	if self.needPostSend {
+		self.WeakUpRecvLoop()
+	}
 
 	self.wait_group.Done()
 }
 
 func (self *Session) SendLoop() {
-
-	//todo 发送线程被条件变量阻塞，需要触发一个消息让其在触发close关闭该协程
-
 	defer func() {
 		//log.Println("SendLoop Over")
 	}()
+
 	var write_list []*Packet
 
 	for {
@@ -182,18 +184,21 @@ func (self *Session) SendLoop() {
 
 	self.Close()
 
+	self.needPostSend = false
+
 	self.wait_group.Done()
 }
 
 func NewSession(conn net.Conn, dispatcher *MsgDispatcher, event_loop *EventLoop) *Session {
 	se := &Session{
-		conn:        conn,
-		head_reader: bufio.NewReader(conn),
-		head_buf:    make([]byte, PackageHeaderSize),
-		is_close:    false,
-		event_loop:  event_loop,
-		dispatcher:  dispatcher,
-		packet_list: NewPacketList(),
+		conn:         conn,
+		head_reader:  bufio.NewReader(conn),
+		head_buf:     make([]byte, PackageHeaderSize),
+		is_close:     false,
+		event_loop:   event_loop,
+		dispatcher:   dispatcher,
+		packet_list:  NewPacketList(),
+		needPostSend: true,
 	}
 
 	se.wait_group.Add(2)
