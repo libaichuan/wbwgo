@@ -78,7 +78,8 @@ func (self *Session) Send(data interface{}) {
 
 	p.msg_id = cur_id
 
-	self.packet_list.AddPacket(p)
+	self.Write(p)
+	//self.packetlist.AddPacket(p)
 }
 
 func (self *Session) Write(p *Packet) bool {
@@ -138,9 +139,9 @@ func (self *Session) RecvLoop() {
 
 	}
 
-	if self.needPostSend {
-		self.WeakUpRecvLoop()
-	}
+	//	if self.needPostSend {
+	//		self.WeakUpRecvLoop()
+	//	}
 
 	self.wait_group.Done()
 }
@@ -201,7 +202,7 @@ func NewSession(conn net.Conn, dispatcher *MsgDispatcher, event_loop *EventLoop)
 		needPostSend: true,
 	}
 
-	se.wait_group.Add(2)
+	se.wait_group.Add(1)
 
 	go func() {
 		se.wait_group.Wait()
@@ -210,7 +211,7 @@ func NewSession(conn net.Conn, dispatcher *MsgDispatcher, event_loop *EventLoop)
 
 	go se.RecvLoop()
 
-	go se.SendLoop()
+	//go se.SendLoop()
 
 	return se
 }
