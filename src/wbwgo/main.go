@@ -1,24 +1,35 @@
 package main
 
 import (
-	//"fmt"
-	"time"
-	"wbwgo/game"
+	"fmt"
+	//"reflect"
 )
 
+//"time"
+//"wbwgo/game"
+
+type AA interface {
+	say()
+	sayno()
+}
+type BB interface {
+	say()
+}
+
+type Person struct {
+}
+
+func (p *Person) say() {
+	fmt.Printf("hello")
+}
+
+func (p *Person) sayno() {
+	fmt.Printf("no")
+}
+
+var b AA
+
 func main() {
-
-	o := new(game.MapObjectBase)
-
-	o.ComputeSpeed(3.0, 4.0, 10.0)
-
-	timer := time.NewTicker(100 * time.Millisecond)
-
-	for {
-		_, ok := <-timer.C
-		if ok {
-			o.Move()
-			o.Print()
-		}
-	}
+	b = &Person{}
+	b.say()
 }
