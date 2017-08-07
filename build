@@ -1,0 +1,21 @@
+#!/bin/bash
+
+export GOPATH=${PWD}
+
+
+building() {
+    printf "\n%s\n" "start building $1 ==="
+    cd $GOPATH/src/$1
+
+    [ -f $1 ] && rm $1
+    echo "building $1 ..."
+    #go build -i -gcflags "-N -l"
+    go build -i
+    echo "=== $1"
+}
+
+main() {
+    building "wbwgo" true
+}
+
+time main
